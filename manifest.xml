@@ -1,0 +1,29 @@
+<package>
+  <description brief="cylinder_projection">
+
+     cylinder_projection
+
+  </description>
+  <author>Nikolas Engelhard</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/cylinder_projection</url>
+
+
+  <rosdep name="qt4"/>
+
+  <!-- rosbuild1 -->
+  <depend package="qt_build"/>
+  <depend package="roscpp"/>
+  
+  <depend package="message_filters"/>
+  <depend package="visualization_msgs"/>
+  <depend package="tf"/>
+  
+  <depend package="projector_calibration"/>
+  <rosbuild2>
+    <depend package="qt_build"/>
+    <depend package="roscpp"/>
+  </rosbuild2>
+  
+</package>

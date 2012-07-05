@@ -1,0 +1,15 @@
+.cproject
+.project
+.pydevproject
+Makefile
+bin/
+build/
+cmake_install.cmake
+mainpage.dox
+msg_gen/
+srv_gen/
+*.py
+*.pyc
+resources/images.qrc.depends
+*.*~
+lib/
