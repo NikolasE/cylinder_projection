@@ -76,7 +76,6 @@ namespace cylinder_projection {
   void log( const LogLevel &level, const std::string &msg);
 
 // public  Q_SLOTS:
-// void user_selected_area();
 
 
  Q_SIGNALS:
@@ -84,6 +83,7 @@ namespace cylinder_projection {
  void rosShutdown();
 
  void newKinectImage();
+ void update_proj_image();
 
  private:
  int init_argc;

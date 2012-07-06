@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>QRosApp</string>
+   <string>Cylinder projection</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../resources/images.qrc">
@@ -23,9 +23,16 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout">
     <item>
+     <widget class="QPushButton" name="pushButton">
+      <property name="text">
+       <string>Load Calibration Data</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QPushButton" name="b_selectArea">
       <property name="text">
-       <string>PushButton</string>
+       <string>Select Area</string>
       </property>
      </widget>
     </item>
@@ -126,8 +133,8 @@
    <slot>select_area()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>184</x>
-     <y>352</y>
+     <x>496</x>
+     <y>366</y>
     </hint>
     <hint type="destinationlabel">
      <x>184</x>
@@ -135,8 +142,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindowDesign</receiver>
+   <slot>load_calibration()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>183</x>
+     <y>353</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>251</x>
+     <y>450</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>select_area()</slot>
+  <slot>load_calibration()</slot>
  </slots>
 </ui>

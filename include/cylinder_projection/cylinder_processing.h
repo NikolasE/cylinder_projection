@@ -17,7 +17,7 @@
 
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_cylinder.h>
-
+#include <pcl/common/transform.h>
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
@@ -32,35 +32,52 @@
 #include <pcl/features/integral_image_normal.h>
 #include <visualization_msgs/Marker.h>
 #include <tf/tf.h>
-
+#include "projector_calibration/stat_eval.h"
 
 class Cylinder_Processing {
 
- Projector_Calibrator* calibrator;
+
  Cloud original;
  Cloud voxeled;
-
-
+// Projector_Calibrator* calibrator;
 
  ros::Publisher pub_input, pub_sampled, pub_inlier, pub_cylinder_marker;
 
-
  bool publishCylinderMarker(const pcl::ModelCoefficients::Ptr& coeffs);
  void sendCloud(ros::Publisher& pub, Cloud& cloud);
+
+ bool kinect_trafo_valid;
+ Eigen::Affine3f kinect_trafo;
+
+ bool proj_valid;
+
+ std::string config_folder_path;
+
+ Cloud inlier_cloud;
+
+ // range of inliers in y-direction
+ float y_min, y_max;
+ // range in yaw around cylinder. (negative z-axis is zero)
+ float angle_min, angle_max;
 
 
 public:
  void init(ros::NodeHandle& nh);
 
+ cv::Mat proj_matrix;
 
+ // TODO: read size from file
+ cv::Mat proj_image;
 
  Cylinder_Processing();
 
- void setNewInputCloud(Cloud& cloud,cv::Mat* mask = NULL);
+ bool setNewInputCloud(Cloud& cloud, std::stringstream& msg, cv::Mat* mask = NULL);
+ bool readCalibration();
 
+ // TODO: include visibility
+ bool calculateProjectionArea();
 
-
-
+ bool visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& img);
 
 
 

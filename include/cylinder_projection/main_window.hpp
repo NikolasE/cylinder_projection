@@ -108,6 +108,9 @@ public:
 	void closeEvent(QCloseEvent *event); // Overloaded function
 	void showNoMasterMessage();
 
+	// label to show projector image on
+	QLabel lb_img;
+
 public Q_SLOTS:
 
 
@@ -117,6 +120,9 @@ public Q_SLOTS:
     void updateLoggingView();
     void updateKinectImage();
     void select_area();
+    void load_calibration();
+    void update_projector_image();
+
 
 private:
 	Ui::MainWindowDesign ui;

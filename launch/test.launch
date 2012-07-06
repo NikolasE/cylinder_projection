@@ -1,0 +1,14 @@
+<launch>
+
+<node pkg="cylinder_projection" type="cylinder_projection" name="cylinder_projection" output="screen" cwd="node"> 
+
+
+<param name="config_folder" value="/usr/gast/engelhan/ros/master_thesis/projector_calibration/data/" />
+
+
+
+</node>
+
+</launch>
+
+

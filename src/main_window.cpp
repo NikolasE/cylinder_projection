@@ -44,8 +44,20 @@ namespace cylinder_projection {
   //	ui.view_logging->setModel(qnode.loggingModel());
   QObject::connect(&qnode, SIGNAL(loggingUpdated()), this, SLOT(updateLoggingView()));
   QObject::connect(&qnode, SIGNAL(newKinectImage()), this, SLOT(updateKinectImage()));
+  QObject::connect(&qnode, SIGNAL(update_proj_image()), this, SLOT(update_projector_image()));
   QObject::connect(&mouse_handler, SIGNAL(redraw_image()), this, SLOT(updateKinectImage()));
+
+
   ui.lb_kinectImage->installEventFilter(&mouse_handler);
+
+
+  lb_img.setParent(NULL);
+  QRect screenres = QApplication::desktop()->screenGeometry(2);
+  lb_img.move(QPoint(screenres.x(), screenres.y()));
+  lb_img.showFullScreen();
+
+  update_projector_image();
+
 
  }
 
@@ -55,7 +67,26 @@ namespace cylinder_projection {
   ** Implementation [Slots]
   *****************************************************************************/
 
+ QImage Mat2QImage(const cv::Mat3b &src) {
+  QImage dest(src.cols, src.rows, QImage::Format_ARGB32);
+  for (int y = 0; y < src.rows; ++y) {
+   const cv::Vec3b *srcrow = src[y];
+   QRgb *destrow = (QRgb*)dest.scanLine(y);
+   for (int x = 0; x < src.cols; ++x) {
+    destrow[x] = qRgba(srcrow[x][2], srcrow[x][1], srcrow[x][0], 255);
+   }
+  }
+  return dest;
+ }
 
+
+ void MainWindow::update_projector_image(){
+
+  QPixmap pixmap;
+  QImage  qimg = Mat2QImage(qnode.cylinder_processor.proj_image);
+  lb_img.setPixmap(pixmap.fromImage(qimg, 0));
+
+ }
 
 
 
@@ -74,17 +105,17 @@ namespace cylinder_projection {
  }
 
 
- QImage Mat2QImage(const cv::Mat3b &src) {
-  QImage dest(src.cols, src.rows, QImage::Format_ARGB32);
-  for (int y = 0; y < src.rows; ++y) {
-   const cv::Vec3b *srcrow = src[y];
-   QRgb *destrow = (QRgb*)dest.scanLine(y);
-   for (int x = 0; x < src.cols; ++x) {
-    destrow[x] = qRgba(srcrow[x][2], srcrow[x][1], srcrow[x][0], 255);
-   }
-  }
-  return dest;
- }
+// QImage Mat2QImage(const cv::Mat3b &src) {
+//  QImage dest(src.cols, src.rows, QImage::Format_ARGB32);
+//  for (int y = 0; y < src.rows; ++y) {
+//   const cv::Vec3b *srcrow = src[y];
+//   QRgb *destrow = (QRgb*)dest.scanLine(y);
+//   for (int x = 0; x < src.cols; ++x) {
+//    destrow[x] = qRgba(srcrow[x][2], srcrow[x][1], srcrow[x][0], 255);
+//   }
+//  }
+//  return dest;
+// }
 
 
 
@@ -121,13 +152,20 @@ namespace cylinder_projection {
 
   applyMaskOnCloud(mask, qnode.current_cloud, filtered);
 
-  qnode.cylinder_processor.setNewInputCloud(qnode.current_cloud, &mask);
+  std::stringstream msg;
+  bool success = qnode.cylinder_processor.setNewInputCloud(qnode.current_cloud,msg, &mask);
 
-//  cv::namedWindow("mask");
-//  cv::imshow("mask", mask);
-//  cv::waitKey(0);
-//  ROS_INFO("there are %zu points in the chosen area!", qnode.selected_cloud.size());
+  if (success){
+   qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
+   update_projector_image();
+  }
 
+ }
+
+
+ void MainWindow::load_calibration(){
+  // read folder from file
+  qnode.cylinder_processor.readCalibration();
  }
 
 
