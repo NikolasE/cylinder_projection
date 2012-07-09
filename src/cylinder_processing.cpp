@@ -81,12 +81,14 @@ bool Cylinder_Processing::publishCylinderMarker(const pcl::ModelCoefficients::Pt
 Cylinder_Processing::Cylinder_Processing(){
  proj_image = cv::Mat(768,1024, CV_8UC3);
  proj_image.setTo(0);
+ coefficients_cylinder = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
 }
 
 void Cylinder_Processing::init(ros::NodeHandle& nh){
  pub_input   =  nh.advertise<Cloud>("/cylinder/input", 1);
  pub_sampled =  nh.advertise<Cloud>("/cylinder/input_sampled", 1);
  pub_inlier  =  nh.advertise<Cloud>("/cylinder/inlier", 1);
+ pub_input_colored =  nh.advertise<Cloud>("/cylinder/inlier_colored", 1);
  pub_cylinder_marker =  nh.advertise<visualization_msgs::Marker>( "/cylinder/marker", 0 );
 
 
@@ -161,16 +163,17 @@ bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,
  seg.setMethodType (pcl::SAC_LMEDS); // SAC_RANSAC
  seg.setNormalDistanceWeight (0.1);
  seg.setMaxIterations (1000);
- seg.setDistanceThreshold (0.03);
+ seg.setDistanceThreshold (0.05);
  seg.setRadiusLimits (0.1, 0.3);
  seg.setInputCloud (sampled.makeShared());
  seg.setInputNormals (norm_sampled.makeShared());
 
 
  pcl::PointIndices::Ptr  inliers_cylinder (new pcl::PointIndices);
- pcl::ModelCoefficients::Ptr coefficients_cylinder (new pcl::ModelCoefficients);
+
  seg.segment (*inliers_cylinder, *coefficients_cylinder);
  std::cerr << "Cylinder coefficients: " << *coefficients_cylinder << std::endl;
+
 
 
  float angle = acos(abs(coefficients_cylinder->values[4]))/M_PI*180; // y-axis is gravitation!
@@ -227,9 +230,14 @@ bool Cylinder_Processing::calculateProjectionArea(){
   y_min = min(y_min, p.y);
   y_max = max(y_max, p.y);
 
-  float angle = atan2(p.z,p.x)/M_PI*180;
 
-  ROS_INFO("angle: %f", angle);
+  // point relative to axis!!
+
+  float angle = atan2(-(p.z-getCylinderZ()),(p.x-getCylinderX()))/M_PI*180;
+
+//  ROS_INFO("angle: %f", angle);
+
+  cout << angle << endl;
 
   angle_min = min(angle_min, angle);
   angle_max = max(angle_max, angle);
@@ -257,9 +265,9 @@ bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& i
 
  // assumes min/max angles are set!
  for (uint i=0;i<inlier_cloud.size(); ++i){
-  pcl_Point p3 = inlier_cloud[i];
+  pcl_Point* p3 = &inlier_cloud[i];
 
-  float angle = atan2(p3.z,p3.x)/M_PI*180;
+  float angle = atan2(-(p3->z-getCylinderZ()),(p3->x-getCylinderX()))/M_PI*180;
 
   //  float c = (angle-angle_min)/(angle_max-angle_min)*180;
   //  cv::Scalar col(c,255,255);
@@ -271,18 +279,33 @@ bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& i
   else
    col =  cv::Scalar(0,0,0);
 
-  p.at<double>(0) = p3.x;
-  p.at<double>(1) = p3.y;
-  p.at<double>(2) = p3.z;
+  if (angle < angle_min+1)
+   col =  cv::Scalar(255,0,0);
+
+  if (angle > angle_max-1)
+     col =  cv::Scalar(0,0,255);
+
+
+
+
+  p.at<double>(0) = p3->x;
+  p.at<double>(1) = p3->y;
+  p.at<double>(2) = p3->z;
   p.at<double>(3) = 1;
 
   px = proj_matrix*p;
   px /= px.at<double>(2);
 
+  p3->r = col.val[0];
+  p3->g = col.val[1];
+  p3->b = col.val[2];
 
   cv::circle(img, cv::Point(px.at<double>(0),px.at<double>(1)), 2, col,-1);
 
  }
+
+ sendCloud(pub_input_colored, inlier_cloud);
+
 
  //cv::cvtColor(img,img,CV_HSV2BGR);
 

@@ -52,9 +52,9 @@ namespace cylinder_projection {
 
 
   lb_img.setParent(NULL);
-  QRect screenres = QApplication::desktop()->screenGeometry(2);
-  lb_img.move(QPoint(screenres.x(), screenres.y()));
-  lb_img.showFullScreen();
+//  QRect screenres = QApplication::desktop()->screenGeometry(2);
+//  lb_img.move(QPoint(screenres.x(), screenres.y()));
+//  lb_img.showFullScreen();
 
   update_projector_image();
 

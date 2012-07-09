@@ -34,6 +34,7 @@
 #include <tf/tf.h>
 #include "projector_calibration/stat_eval.h"
 
+
 class Cylinder_Processing {
 
 
@@ -41,7 +42,7 @@ class Cylinder_Processing {
  Cloud voxeled;
 // Projector_Calibrator* calibrator;
 
- ros::Publisher pub_input, pub_sampled, pub_inlier, pub_cylinder_marker;
+ ros::Publisher pub_input, pub_input_colored, pub_sampled, pub_inlier, pub_cylinder_marker;
 
  bool publishCylinderMarker(const pcl::ModelCoefficients::Ptr& coeffs);
  void sendCloud(ros::Publisher& pub, Cloud& cloud);
@@ -59,6 +60,12 @@ class Cylinder_Processing {
  float y_min, y_max;
  // range in yaw around cylinder. (negative z-axis is zero)
  float angle_min, angle_max;
+
+ pcl::ModelCoefficients::Ptr coefficients_cylinder;// (new pcl::ModelCoefficients);
+
+float getCylinderX(){ return coefficients_cylinder->values[0];}
+float getCylinderY(){ return coefficients_cylinder->values[1];}
+float getCylinderZ(){ return coefficients_cylinder->values[2];}
 
 
 public:
