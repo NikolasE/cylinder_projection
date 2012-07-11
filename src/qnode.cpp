@@ -43,10 +43,22 @@ QNode::~QNode() {
 }
 
 bool QNode::init() {
-	ros::init(init_argc,init_argv,"cylinder_projection");
+
+   ROS_INFO("@@ Testing @@");
+   test_intersection();
+
+ ros::init(init_argc,init_argv,"cylinder_projection");
 	if ( ! ros::master::check() ) {
 		return false;
 	}
+
+
+
+//
+//	ROS_INFO("@@ Testing @@");
+//	test_intersection();
+
+
 	ros::start(); // explicitly needed since our nodehandle is going out of scope.
 	ros::NodeHandle n;
 	// Add your ros communications here.
@@ -59,6 +71,7 @@ bool QNode::init() {
 
 void QNode::imgCloudCB(const sensor_msgs::ImageConstPtr& img_ptr, const sensor_msgs::PointCloud2ConstPtr& cloud_ptr){
  // ROS_INFO("Got image");
+
 
  pcl::fromROSMsg(*cloud_ptr, current_cloud);
 
@@ -75,6 +88,9 @@ void QNode::imgCloudCB(const sensor_msgs::ImageConstPtr& img_ptr, const sensor_m
 void QNode::run() {
 	ros::Rate loop_rate(30);
 
+
+
+
   ros::NodeHandle nh;
 
   typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> policy;
@@ -84,6 +100,8 @@ void QNode::run() {
   sync.registerCallback(boost::bind(&QNode::imgCloudCB,this, _1, _2));
 
   cylinder_processor.init(nh);
+
+
 
 
 	while ( ros::ok() ) {

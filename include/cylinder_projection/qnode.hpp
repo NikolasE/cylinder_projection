@@ -30,7 +30,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include "projector_calibration/calibration_utils.h"
 #include "cylinder_projection/cylinder_processing.h"
-
+#include "cylinder_projection/cylinder_utils.h"
 
 /*****************************************************************************
  ** Namespaces
@@ -56,6 +56,8 @@ namespace cylinder_projection {
   Cloud current_cloud;
   Cloud selected_cloud;
   Cylinder_Processing cylinder_processor;
+
+
 
 
 

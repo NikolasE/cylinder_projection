@@ -52,12 +52,22 @@ namespace cylinder_projection {
 
 
   lb_img.setParent(NULL);
-//  QRect screenres = QApplication::desktop()->screenGeometry(2);
-//  lb_img.move(QPoint(screenres.x(), screenres.y()));
-//  lb_img.showFullScreen();
+
+
+  if (QApplication::desktop()->numScreens()<2){
+   ROS_WARN("No projector found!");
+  }else{
+   QRect screenres = QApplication::desktop()->screenGeometry(2);
+   lb_img.move(QPoint(screenres.x(), screenres.y()));
+   lb_img.showFullScreen();
+  }
+
 
   update_projector_image();
 
+
+  // read config at beginning
+  qnode.cylinder_processor.readCalibration();
 
  }
 
@@ -156,7 +166,13 @@ namespace cylinder_projection {
   bool success = qnode.cylinder_processor.setNewInputCloud(qnode.current_cloud,msg, &mask);
 
   if (success){
-   qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
+
+   //drawLineImage(qnode.cylinder_processor.proj_image, qnode.cylinder_processor.proj_image.cols, qnode.cylinder_processor.proj_image.rows, 10, 5, 2);
+
+
+
+   qnode.cylinder_processor.forward_projection();
+   // qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
    update_projector_image();
   }
 

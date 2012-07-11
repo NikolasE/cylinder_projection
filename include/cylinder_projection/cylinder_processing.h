@@ -33,7 +33,7 @@
 #include <visualization_msgs/Marker.h>
 #include <tf/tf.h>
 #include "projector_calibration/stat_eval.h"
-
+#include "cylinder_projection/cylinder_utils.h"
 
 class Cylinder_Processing {
 
@@ -67,6 +67,10 @@ float getCylinderX(){ return coefficients_cylinder->values[0];}
 float getCylinderY(){ return coefficients_cylinder->values[1];}
 float getCylinderZ(){ return coefficients_cylinder->values[2];}
 
+float getCylinderRadius(){ return coefficients_cylinder->values[6];}
+
+void computeProjectorPosition();
+cv::Mat projector_position;
 
 public:
  void init(ros::NodeHandle& nh);
@@ -86,6 +90,7 @@ public:
 
  bool visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& img);
 
+ void forward_projection();
 
 
 

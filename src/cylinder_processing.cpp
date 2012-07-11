@@ -115,6 +115,8 @@ bool Cylinder_Processing::readCalibration(){
 
  if (!proj_valid)
   ROS_WARN("Could not find projection matrix");
+ else
+  computeProjectorPosition();
 
  return (proj_valid && kinect_trafo_valid);
 }
@@ -231,13 +233,13 @@ bool Cylinder_Processing::calculateProjectionArea(){
   y_max = max(y_max, p.y);
 
 
-  // point relative to axis!!
+  // point relative to axis
 
   float angle = atan2(-(p.z-getCylinderZ()),(p.x-getCylinderX()))/M_PI*180;
 
-//  ROS_INFO("angle: %f", angle);
+  //  ROS_INFO("angle: %f", angle);
 
-  cout << angle << endl;
+  // cout << angle << endl;
 
   angle_min = min(angle_min, angle);
   angle_max = max(angle_max, angle);
@@ -255,9 +257,112 @@ bool Cylinder_Processing::calculateProjectionArea(){
 }
 
 
+void Cylinder_Processing::forward_projection(){
+
+ if (!proj_valid) {
+  ROS_ERROR("Forward_projection: No projection matrix!");
+  return;
+ }
+
+ proj_image.setTo(0);
+
+
+
+ cv::Mat img;
+ int rows = 600;
+ int cols = rows;
+ drawLineImage(img, cols, rows,10,10,1);
+
+
+// cv::namedWindow("foo");
+// cv::imshow("foo", img);
+// cv::waitKey(0);
+
+ cv::Point3f S;
+ float y, phi;
+
+ for (int i=0; i<proj_image.cols; ++i)
+  for (int j=0; j<proj_image.rows; ++j){
+   bool hit = intersectWithCylinder(getCylinderRadius(), getCylinderX(), getCylinderZ(), cv::Point2f(i,j), proj_matrix, projector_position,S, y, phi);
+
+   if (!hit) {
+    // cv::circle(proj_image, cv::Point2f(i,j), 2, cv::Scalar(0,255,0),-1);
+    continue;
+   }
+
+
+
+   /*
+   int px = (phi-angle_min)/(angle_max-angle_min)*cols;
+   int py = (y-y_min)/(y_max-y_min)*rows;
+
+   // ROS_INFO("px: %i %i", px,py);
+
+   cv::Vec3b c = img.at<cv::Vec3b>(py,px);
+   cv::Scalar col;
+   col.val[0] =c.val[0];
+   col.val[1] =c.val[1];
+   col.val[2] =c.val[2];
+
+*/
+
+   /*
+    * Draw checkerboard
+    *
+    */
+   bool y_white = (int(y*100)/5)%2;
+   if (y<0) y_white = !y_white; // (3%2 == -3%2)..
+
+   // bool rot = int((phi-angle_min)/(angle_max-angle_min)*5)%2;
+
+   bool rot = (int(phi)/10)%2;
+
+   cv::Scalar col;
+
+   if (y_white == rot)
+    col =  cv::Scalar(255,255,255);
+   else
+    col =  cv::Scalar(0,0,0);
+
+   if (phi < angle_min+5)
+    col =  cv::Scalar(255,0,0);
+
+   if (phi > angle_max-5)
+    col =  cv::Scalar(0,0,255);
+
+
+   cv::circle(proj_image, cv::Point2f(i,j), 2, col,-1);
+
+
+
+  }
+
+
+
+}
+
+
+void Cylinder_Processing::computeProjectorPosition(){
+
+ assert(proj_valid);
+
+ cv::Mat camera_matrix,rotMatrix;
+
+ cv::decomposeProjectionMatrix(proj_matrix, camera_matrix,rotMatrix, projector_position);
+
+ //camera_matrix /= camera_matrix.at<double>(2,2);
+
+ projector_position /= projector_position.at<double>(3);
+
+ cout << "Projector position: " << projector_position << endl;
+
+}
+
+
+
 bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& img){
 
- if (!proj_valid) return -1;
+ if (!proj_valid) return false;
 
  cv::Mat p(4,1,CV_64FC1);
  cv::Mat px(3,1,CV_64FC1);
@@ -272,9 +377,14 @@ bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& i
   //  float c = (angle-angle_min)/(angle_max-angle_min)*180;
   //  cv::Scalar col(c,255,255);
 
-  int c = floor((angle-angle_min)/(angle_max-angle_min)*5);
+
+  bool y_white = (int(p3->y*100)/5)%2;
+  if (p3->y<0) y_white = !y_white; // (3%2 == -3%2)..
+
+  bool rot = int((angle-angle_min)/(angle_max-angle_min)*5)%2;
   cv::Scalar col;
-  if (c % 2 )
+
+  if (y_white == rot)
    col =  cv::Scalar(255,255,255);
   else
    col =  cv::Scalar(0,0,0);
@@ -283,7 +393,7 @@ bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& i
    col =  cv::Scalar(255,0,0);
 
   if (angle > angle_max-1)
-     col =  cv::Scalar(0,0,255);
+   col =  cv::Scalar(0,0,255);
 
 
 
@@ -308,9 +418,6 @@ bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& i
 
 
  //cv::cvtColor(img,img,CV_HSV2BGR);
-
-
-
 
  return true;
 
