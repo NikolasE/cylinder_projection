@@ -172,7 +172,7 @@ namespace cylinder_projection {
 
 
    qnode.cylinder_processor.forward_projection();
-   // qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
+//   qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
    update_projector_image();
   }
 

@@ -42,10 +42,10 @@ class Cylinder_Processing {
  Cloud voxeled;
 // Projector_Calibrator* calibrator;
 
- ros::Publisher pub_input, pub_input_colored, pub_sampled, pub_inlier, pub_cylinder_marker;
+ ros::Publisher pub_input, pub_input_colored, pub_sampled, pub_inlier, pub_cylinder_marker, pub_inlier_moved;
 
  bool publishCylinderMarker(const pcl::ModelCoefficients::Ptr& coeffs);
- void sendCloud(ros::Publisher& pub, Cloud& cloud);
+ bool sendCloud(ros::Publisher& pub, Cloud& cloud);
 
  bool kinect_trafo_valid;
  Eigen::Affine3f kinect_trafo;
@@ -71,6 +71,10 @@ float getCylinderRadius(){ return coefficients_cylinder->values[6];}
 
 void computeProjectorPosition();
 cv::Mat projector_position;
+
+// moves the cylinder so that its centered around y-axis
+Eigen::Affine3f cylinder_trafo;
+Cloud inlier_centered; // inliers with cylinder_trafo applied
 
 public:
  void init(ros::NodeHandle& nh);
