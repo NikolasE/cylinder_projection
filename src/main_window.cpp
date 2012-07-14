@@ -163,7 +163,10 @@ namespace cylinder_projection {
   applyMaskOnCloud(mask, qnode.current_cloud, filtered);
 
   std::stringstream msg;
-  bool success = qnode.cylinder_processor.setNewInputCloud(qnode.current_cloud,msg, &mask);
+  Cylindric_projection_area area;
+  bool success = qnode.cylinder_processor.setNewInputCloud(qnode.current_cloud,msg,area, &mask);
+
+  qnode.cylinder_processor.proj_image.setTo(0);
 
   if (success){
 
@@ -171,7 +174,7 @@ namespace cylinder_projection {
 
 
 
-   qnode.cylinder_processor.forward_projection();
+   qnode.cylinder_processor.forward_projection(area);
 //   qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
    update_projector_image();
   }

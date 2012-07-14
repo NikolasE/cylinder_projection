@@ -84,7 +84,6 @@ bool Cylinder_Processing::publishCylinderMarker(const pcl::ModelCoefficients::Pt
 Cylinder_Processing::Cylinder_Processing(){
  proj_image = cv::Mat(768,1024, CV_8UC3);
  proj_image.setTo(0);
- coefficients_cylinder = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
 }
 
 void Cylinder_Processing::init(ros::NodeHandle& nh){
@@ -125,10 +124,10 @@ bool Cylinder_Processing::readCalibration(){
  return (proj_valid && kinect_trafo_valid);
 }
 
-bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,  cv::Mat* mask){
+bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,Cylindric_projection_area& cylinder, cv::Mat* mask){
  original = cloud;
 
- inlier_cloud.clear();
+ cylinder.inlier_cloud.clear();
 
  if (cloud.size() == 0)
   return false;
@@ -149,7 +148,7 @@ bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,
  pcl::IntegralImageNormalEstimation<pcl_Point, pcl::Normal> ne;
  ne.setNormalEstimationMethod (ne.AVERAGE_3D_GRADIENT);
  ne.setMaxDepthChangeFactor(0.02f);
- ne.setNormalSmoothingSize(10.0f);
+ ne.setNormalSmoothingSize(5.0f);
  ne.setInputCloud(original.makeShared());
  ne.compute(*normals);
 
@@ -159,37 +158,46 @@ bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,
  Cloud sampled;
  Cloud_n norm_sampled;
 
- sampleCloudWithNormals(original, *normals, sampled, norm_sampled, 1, mask);
+ sampleCloudWithNormals(original, *normals, sampled, norm_sampled, 3, mask);
 
 
  pcl::SACSegmentationFromNormals<pcl_Point, pcl::Normal> seg;
 
  seg.setOptimizeCoefficients (true);
  seg.setModelType (pcl::SACMODEL_CYLINDER);
- seg.setMethodType (pcl::SAC_LMEDS); // SAC_RANSAC
+ seg.setMethodType (pcl::SAC_LMEDS); // SAC_RANSAC //
  seg.setNormalDistanceWeight (0.1);
- seg.setMaxIterations (1000);
- seg.setDistanceThreshold (0.01);
- seg.setRadiusLimits (0.1, 0.3);
+ seg.setMaxIterations(10000);
+ seg.setDistanceThreshold (0.02);
+ seg.setRadiusLimits (0.15, 0.25);
  seg.setInputCloud (sampled.makeShared());
  seg.setInputNormals (norm_sampled.makeShared());
 
 
  pcl::PointIndices::Ptr  inliers_cylinder (new pcl::PointIndices);
 
- seg.segment (*inliers_cylinder, *coefficients_cylinder);
- std::cerr << "Cylinder coefficients: " << *coefficients_cylinder << std::endl;
+ seg.segment (*inliers_cylinder, *cylinder.coefficients_cylinder);
+
+ // normalize directon of cylinder
+ if (cylinder.coefficients_cylinder->values[4] < 0){
+  cylinder.coefficients_cylinder->values[3] *= -1;
+  cylinder.coefficients_cylinder->values[4] *= -1;
+  cylinder.coefficients_cylinder->values[5] *= -1;
+ }
+
+
+ std::cerr << "Cylinder coefficients: " << *cylinder.coefficients_cylinder << std::endl;
 
 
 
- float angle = acos(abs(coefficients_cylinder->values[4]))/M_PI*180; // y-axis is gravitation!
+ float angle = acos(abs(cylinder.coefficients_cylinder->values[4]))/M_PI*180; // y-axis is gravitation!
 
  if (angle < 10)
   ROS_INFO("Cylinder has angle of %.1f deg to y-axis", angle);
  else
   ROS_WARN("Cylinder has angle of %.1f deg to y-axis", angle);
 
- if (angle > 20) return -1;
+ if (angle > 20) return false;
 
  if (inliers_cylinder->indices.size() == 0) return false;
 
@@ -199,41 +207,38 @@ bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,
  extract.setIndices (inliers_cylinder);
  extract.setNegative (false);
 
- extract.filter (inlier_cloud);
+ extract.filter(cylinder.inlier_cloud);
 
 
- ROS_INFO("model has %zu inlier", inlier_cloud.size());
+ ROS_INFO("model has %zu inlier", cylinder.inlier_cloud.size());
 
 
- if (inlier_cloud.size() < 0.5*sampled.size()){
-  ROS_INFO("Cylinder fitting: Only %.1f%% inlier", inlier_cloud.size()*100.0/sampled.size());
+ if (cylinder.inlier_cloud.size() < 0.5*sampled.size()){
+  ROS_INFO("Cylinder fitting: Only %.1f%% inlier", cylinder.inlier_cloud.size()*100.0/sampled.size());
  }
 
 
- msg << "Cylinder with " << inlier_cloud.size()*100.0/sampled.size() << "% inliers was found";
+ msg << "Cylinder with " << cylinder.inlier_cloud.size()*100.0/sampled.size() << "% inliers was found";
 
 
- publishCylinderMarker(coefficients_cylinder);
+ publishCylinderMarker(cylinder.coefficients_cylinder);
 
- sendCloud(pub_inlier,inlier_cloud);
+ sendCloud(pub_inlier,cylinder.inlier_cloud);
 
- calculateProjectionArea();
+ cylinder.calculateProjectionArea();
 
  return true;
 }
 
-bool Cylinder_Processing::calculateProjectionArea(){
+bool Cylindric_projection_area::calculateProjectionArea(){
 
  if (inlier_cloud.size() == 0) return -1;
 
- // for now: cylinder is assumed to stand upright in y-direction
 
  y_min = angle_min = 1e5;
  y_max = angle_max = -1e5;
 
- ROS_INFO("Cylinder: %f %f",getCylinderX(),getCylinderZ() );
-
-
+ // ROS_INFO("Cylinder: %f %f",getCylinderX(),getCylinderZ() );
 
 
  Eigen::Vector3f origo(getCylinderX(),getCylinderY(),getCylinderZ());
@@ -248,11 +253,7 @@ bool Cylinder_Processing::calculateProjectionArea(){
 
  pcl::getTransformedPointCloud(inlier_cloud, cylinder_trafo, inlier_centered);
 
- sendCloud(pub_inlier_moved, inlier_centered);
-
-
-
-
+ // sendCloud(pub_inlier_moved, inlier_centered);
 
  for (uint i=0;i<inlier_centered.size(); ++i){
   pcl_Point p= inlier_centered[i];
@@ -316,14 +317,14 @@ void appendTrafo(const cv::Mat& P, const Eigen::Affine3f& trafo,cv::Mat& P_){
 
 
 
-void Cylinder_Processing::forward_projection(){
+void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder){
 
  if (!proj_valid) {
   ROS_ERROR("Forward_projection: No projection matrix!");
   return;
  }
 
- proj_image.setTo(0);
+ // proj_image.setTo(0);
 
  // #define projectTestImage
 
@@ -343,13 +344,13 @@ void Cylinder_Processing::forward_projection(){
  float y, phi, hit_angle;
 
  int checkerboard_size= 5; // cm
- float R = getCylinderRadius();
+ float R = cylinder.getCylinderRadius();
  int d_phi = int(360.0*checkerboard_size/(2*M_PI*R*100));
  ROS_INFO("d_phi = %i", d_phi);
 
 
  cv::Mat P_trafoed;
- appendTrafo(proj_matrix,cylinder_trafo.inverse(), P_trafoed);
+ appendTrafo(proj_matrix,cylinder.cylinder_trafo.inverse(), P_trafoed);
 
  cout << "original " << endl <<proj_matrix << endl;
 
@@ -374,7 +375,7 @@ void Cylinder_Processing::forward_projection(){
  cout << "foo " << old_pos << endl;
  Cloud foo; foo.push_back(old_pos);
  Cloud bar;
- pcl::getTransformedPointCloud(foo, cylinder_trafo, bar);
+ pcl::getTransformedPointCloud(foo, cylinder.cylinder_trafo, bar);
 
  ROS_INFO("trafoed pose: %f %f %f", bar[0].x,bar[0].y,bar[0].z);
 
@@ -388,7 +389,7 @@ void Cylinder_Processing::forward_projection(){
  for (int i=0; i<proj_image.cols; i+=1)
   for (int j=0; j<proj_image.rows; j+=1){
 
-   bool hit = intersectWithCylinder(getCylinderRadius(), 0,0, cv::Point2f(i,j), P_trafoed, new_pos, S, y, phi, hit_angle);
+   bool hit = intersectWithCylinder(cylinder.getCylinderRadius(), 0,0, cv::Point2f(i,j), P_trafoed, new_pos, S, y, phi, hit_angle);
 
 
 
@@ -397,8 +398,8 @@ void Cylinder_Processing::forward_projection(){
 
    if (!hit) continue;
 
-   if (phi < angle_min || phi > angle_max){
-     continue;
+   if (phi < cylinder.angle_min || phi > cylinder.angle_max){
+    continue;
    }
 
    //     pcl_Point s; s.x = S.x; s.y = S.y; s.z = S.z; Cloud f; f.push_back(s);
@@ -460,12 +461,11 @@ void Cylinder_Processing::forward_projection(){
 
 
 
-
-   if (phi < angle_min+5){
+   if (phi < cylinder.angle_min+5){
     //
     col =  cv::Scalar(255,0,0);
    }
-   if (phi > angle_max-5){
+   if (phi > cylinder.angle_max-5){
     //ROS_INFO("blue: %f", phi);
     col =  cv::Scalar(0,0,255);
    }
@@ -475,8 +475,8 @@ void Cylinder_Processing::forward_projection(){
 
    //   ROS_INFO("hit angle: %f", hit_angle);
 
-   if (hit_angle > 70)
-    col =  cv::Scalar(255,0,0);
+      if (hit_angle > 70)
+       col =  cv::Scalar(100,0,0);
 
 
 
@@ -511,7 +511,7 @@ void Cylinder_Processing::computeProjectorPosition(){
 }
 
 
-
+/*
 bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& img){
 
  if (!proj_valid) return false;
@@ -576,5 +576,5 @@ bool Cylinder_Processing::visualizeAngles(const cv::Mat& proj_matrix, cv::Mat& i
 
 }
 
-
+ */
 
