@@ -115,19 +115,6 @@ namespace cylinder_projection {
  }
 
 
-// QImage Mat2QImage(const cv::Mat3b &src) {
-//  QImage dest(src.cols, src.rows, QImage::Format_ARGB32);
-//  for (int y = 0; y < src.rows; ++y) {
-//   const cv::Vec3b *srcrow = src[y];
-//   QRgb *destrow = (QRgb*)dest.scanLine(y);
-//   for (int x = 0; x < src.cols; ++x) {
-//    destrow[x] = qRgba(srcrow[x][2], srcrow[x][1], srcrow[x][0], 255);
-//   }
-//  }
-//  return dest;
-// }
-
-
 
  void MainWindow::updateKinectImage(){
   cv::Mat small_copy;
@@ -152,15 +139,11 @@ namespace cylinder_projection {
   cv::Point l1(mouse_handler.down.x/image_scale,mouse_handler.down.y/image_scale);
   cv::Point l2(mouse_handler.up.x/image_scale,mouse_handler.up.y/image_scale);
 
-//  ROS_INFO("l1: %i %i, l2: %i %i", l1.x, l1.y, l2.x,l2.y);
 
+  // select search area
   cv::Mat mask(480,640,CV_8UC1);
   mask.setTo(0);
   cv::rectangle(mask, l1, l2,CV_RGB(255,255,255),-1);
-
-  Cloud filtered;
-
-  applyMaskOnCloud(mask, qnode.current_cloud, filtered);
 
   std::stringstream msg;
   Cylindric_projection_area area;
@@ -169,13 +152,8 @@ namespace cylinder_projection {
   qnode.cylinder_processor.proj_image.setTo(0);
 
   if (success){
-
    //drawLineImage(qnode.cylinder_processor.proj_image, qnode.cylinder_processor.proj_image.cols, qnode.cylinder_processor.proj_image.rows, 10, 5, 2);
-
-
-
    qnode.cylinder_processor.forward_projection(area);
-//   qnode.cylinder_processor.visualizeAngles(qnode.cylinder_processor.proj_matrix, qnode.cylinder_processor.proj_image);
    update_projector_image();
   }
 

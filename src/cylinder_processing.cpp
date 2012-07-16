@@ -445,10 +445,6 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
    bool y_white = (int(y*100)/checkerboard_size)%2;
    if (y<0) y_white = !y_white; // (3%2 == -3%2)..
 
-   // bool rot = int((phi-angle_min)/(angle_max-angle_min)*5)%2;
-
-
-
    bool rot = (int(phi)/d_phi)%2;
    if (phi<0) rot = !rot;
 
@@ -462,52 +458,30 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
 
 
    if (phi < cylinder.angle_min+5){
-    //
     col =  cv::Scalar(255,0,0);
    }
+
    if (phi > cylinder.angle_max-5){
-    //ROS_INFO("blue: %f", phi);
     col =  cv::Scalar(0,0,255);
    }
-   //
 
-
-
-   //   ROS_INFO("hit angle: %f", hit_angle);
-
-      if (hit_angle > 70)
-       col =  cv::Scalar(100,0,0);
-
-
+   if (hit_angle > 70)
+    col =  cv::Scalar(100,0,0);
 
    cv::circle(proj_image, cv::Point2f(i,j), 1, col,-1);
 #endif
 
-
-
-
-
   }
-
-
 
 }
 
 
 void Cylinder_Processing::computeProjectorPosition(){
-
  assert(proj_valid);
-
  cv::Mat camera_matrix,rotMatrix;
-
  cv::decomposeProjectionMatrix(proj_matrix, camera_matrix,rotMatrix, projector_position);
-
- //camera_matrix /= camera_matrix.at<double>(2,2);
-
  projector_position /= projector_position.at<double>(3);
-
- cout << "Projector position: " << projector_position << endl;
-
+ // cout << "Projector position: " << projector_position << endl;
 }
 
 
