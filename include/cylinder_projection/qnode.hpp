@@ -28,7 +28,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv/cv.h>
 #include <sensor_msgs/PointCloud2.h>
-#include "projector_calibration/calibration_utils.h"
+#include "rgbd_utils/calibration_utils.h"
 #include "cylinder_projection/cylinder_processing.h"
 #include "cylinder_projection/cylinder_utils.h"
 
@@ -57,9 +57,10 @@ namespace cylinder_projection {
   Cloud selected_cloud;
   Cylinder_Processing cylinder_processor;
 
+  std::vector<Cloud> cloud_list;
+  const static uint list_length = 10;
 
-
-
+  Cloud mean_cloud;
 
   void imgCloudCB(const sensor_msgs::ImageConstPtr& img_ptr, const sensor_msgs::PointCloud2ConstPtr& cloud_ptr);
 
@@ -86,6 +87,7 @@ namespace cylinder_projection {
 
  void newKinectImage();
  void update_proj_image();
+// void new_mean_cloud(Cloud mean);
 
  private:
  int init_argc;

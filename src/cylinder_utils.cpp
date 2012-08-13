@@ -10,6 +10,61 @@
 using namespace std;
 
 
+
+
+
+
+
+void applyBilateralFilter(const Cloud& in, double diameter, double sigmaDist, double sigmaPixel, Cloud& out){
+
+
+ cv::Mat dist(in.height, in.width, CV_32FC1);
+
+ out = in;
+
+ for (uint x=0; x<in.width; ++x)
+  for (uint y=0; y<in.height; ++y){
+   pcl_Point p = in.at(x,y);
+
+   if (p.x != p.x)
+    dist.at<float>(y,x) = 0;
+   else
+    dist.at<float>(y,x) = norm(p);
+  }
+
+ cv::Mat smoothed;
+
+ cv::bilateralFilter(dist, smoothed, diameter, sigmaDist, sigmaPixel);
+
+ float mean_change = 0;
+ int cnt= 0;
+
+ for (uint x=0; x<in.width; ++x)
+  for (uint y=0; y<in.height; ++y){
+   pcl_Point p = in.at(x,y);
+   float new_dist = smoothed.at<float>(y,x);
+
+   if (abs(new_dist) < 0.2) continue;
+
+   float old_dist = dist.at<float>(y,x);
+
+   mean_change += abs(new_dist-old_dist);
+   cnt++;
+
+   out.at(x,y) = setLength(p,new_dist);
+  }
+
+ mean_change /= cnt;
+
+ ROS_INFO("bilateral filter: mean change of %.2f cm", mean_change*100);
+
+
+
+
+}
+
+
+
 bool similar(cv::Point3f a, cv::Point3f b){
  float thres = 1e-3;
  return (abs(a.x-b.x) < thres && abs(a.y-b.y) < thres && abs(a.z-b.z) < thres);
@@ -70,7 +125,7 @@ void test_intersection(){
  assert(similar(S,cv::Point3f(sin(45/180.0*M_PI)*R,0,R-cos(45/180.0*M_PI)*R)));
 
 
-ROS_INFO("Checked intersection code!");
+ ROS_INFO("Checked intersection code!");
 
 
 }
@@ -159,11 +214,11 @@ bool intersect(cv::Point3f proj_center, cv::Point3f point_on_ray, float m_x, flo
  //ROS_INFO("center: %f %f %f", proj_center.x,proj_center.y,proj_center.z);
 
 
-  S = cv::Point3f(proj_center.x+alpha*dx,
-                  proj_center.y+alpha*dy,
-                  proj_center.z+alpha*dz);
+ S = cv::Point3f(proj_center.x+alpha*dx,
+   proj_center.y+alpha*dy,
+   proj_center.z+alpha*dz);
 
-  return true;
+ return true;
 
 }
 

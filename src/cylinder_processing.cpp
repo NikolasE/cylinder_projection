@@ -94,6 +94,8 @@ void Cylinder_Processing::init(ros::NodeHandle& nh){
  pub_inlier_moved =  nh.advertise<Cloud>("/cylinder/inlier_centered", 1);
  pub_cylinder_marker =  nh.advertise<visualization_msgs::Marker>( "/cylinder/marker", 0 );
 
+ pub_mean_cloud =  nh.advertise<Cloud>("/cylinder/mean_cloud", 1);
+
 
  // calibrator = new Projector_Calibrator();
 }
@@ -167,8 +169,8 @@ bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,
  seg.setModelType (pcl::SACMODEL_CYLINDER);
  seg.setMethodType (pcl::SAC_LMEDS); // SAC_RANSAC //
  seg.setNormalDistanceWeight (0.1);
- seg.setMaxIterations(10000);
- seg.setDistanceThreshold (0.02);
+ seg.setMaxIterations(1000);
+ seg.setDistanceThreshold (0.04);
  seg.setRadiusLimits (0.15, 0.25);
  seg.setInputCloud (sampled.makeShared());
  seg.setInputNormals (norm_sampled.makeShared());
@@ -186,7 +188,7 @@ bool Cylinder_Processing::setNewInputCloud(Cloud& cloud, std::stringstream& msg,
  }
 
 
- std::cerr << "Cylinder coefficients: " << *cylinder.coefficients_cylinder << std::endl;
+ // std::cerr << "Cylinder coefficients: " << *cylinder.coefficients_cylinder << std::endl;
 
 
 
@@ -248,8 +250,8 @@ bool Cylindric_projection_area::calculateProjectionArea(){
  computeTransformationFromYZVectorsAndOrigin(y_axis,z_axis, origo, cylinder_trafo);
 
 
- cout << "trafo: "  << endl;
- printTrafo(cylinder_trafo);
+// cout << "trafo: "  << endl;
+// printTrafo(cylinder_trafo);
 
  pcl::getTransformedPointCloud(inlier_cloud, cylinder_trafo, inlier_centered);
 
@@ -282,6 +284,10 @@ bool Cylindric_projection_area::calculateProjectionArea(){
  // ROS_INFO("atan2(0,-1) = %f",atan2(0,-1));
 
 
+ float phi_min = acos(getCylinderZ()/getCylinderRadius())/M_PI*180;
+// ROS_INFO("phi_min (plane intersection): %f ( z = %f, r=%f)", phi_min, getCylinderZ(),getCylinderRadius() );
+
+ angle_min = -phi_min;
 
  ROS_INFO("y: from %f to %f", y_min, y_max);
  ROS_INFO("yaw: from %f to %f", angle_min, angle_max);
@@ -302,12 +308,12 @@ void appendTrafo(const cv::Mat& P, const Eigen::Affine3f& trafo,cv::Mat& P_){
  for (uint i=0;i<4; ++i){
   for (uint j=0;j<4; ++j){
    t.at<double>(i,j) = trafo(i,j);
-   cout << trafo(i,j) << " ";
+//   cout << trafo(i,j) << " ";
   }
-  cout << endl;
+//  cout << endl;
  }
 
- cout << "trafo as mat" << endl << t << endl;
+// cout << "trafo as mat" << endl << t << endl;
 
  P_ = P*t;
 
@@ -352,9 +358,9 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
  cv::Mat P_trafoed;
  appendTrafo(proj_matrix,cylinder.cylinder_trafo.inverse(), P_trafoed);
 
- cout << "original " << endl <<proj_matrix << endl;
-
- cout << "trafoed " << endl <<P_trafoed << endl;
+// cout << "original " << endl <<proj_matrix << endl;
+//
+// cout << "trafoed " << endl <<P_trafoed << endl;
 
 
 
@@ -363,8 +369,8 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
  cv::Mat camera_matrix,rotMatrix;
  cv::decomposeProjectionMatrix(P_trafoed, camera_matrix,rotMatrix, new_position);
  new_position /= new_position.at<double>(3);
- cout << "new_position: " << new_position << endl;
- cout << "old_position: " << projector_position << endl;
+// cout << "new_position: " << new_position << endl;
+// cout << "old_position: " << projector_position << endl;
 
  // apply trafo on old position:
  pcl_Point old_pos;
@@ -372,12 +378,12 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
  old_pos.y = projector_position.at<double>(1);
  old_pos.z = projector_position.at<double>(2);
 
- cout << "foo " << old_pos << endl;
+// cout << "foo " << old_pos << endl;
  Cloud foo; foo.push_back(old_pos);
  Cloud bar;
  pcl::getTransformedPointCloud(foo, cylinder.cylinder_trafo, bar);
 
- ROS_INFO("trafoed pose: %f %f %f", bar[0].x,bar[0].y,bar[0].z);
+// ROS_INFO("trafoed pose: %f %f %f", bar[0].x,bar[0].y,bar[0].z);
 
  cv::Mat new_pos(1,3,CV_64FC1);
  new_pos.at<double>(0) = bar[0].x;
@@ -439,14 +445,12 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
 #else
 
 
-
-
    // Draw checkerboard
    bool y_white = (int(y*100)/checkerboard_size)%2;
    if (y<0) y_white = !y_white; // (3%2 == -3%2)..
 
-   bool rot = (int(phi)/d_phi)%2;
-   if (phi<0) rot = !rot;
+   bool rot = (int(phi-cylinder.angle_min)/d_phi)%2;
+   if (phi-cylinder.angle_min<0) rot = !rot;
 
    cv::Scalar col;
 
@@ -457,16 +461,16 @@ void Cylinder_Processing::forward_projection(Cylindric_projection_area& cylinder
 
 
 
-   if (phi < cylinder.angle_min+5){
-    col =  cv::Scalar(255,0,0);
-   }
-
-   if (phi > cylinder.angle_max-5){
-    col =  cv::Scalar(0,0,255);
-   }
+//   if (phi < cylinder.angle_min+d_phi/2){
+//    col =  cv::Scalar(255,0,0);
+//   }
+//
+//   if (phi > cylinder.angle_max-5){
+//    col =  cv::Scalar(0,0,255);
+//   }
 
    if (hit_angle > 70)
-    col =  cv::Scalar(100,0,0);
+    col =  cv::Scalar(255,255,0);
 
    cv::circle(proj_image, cv::Point2f(i,j), 1, col,-1);
 #endif

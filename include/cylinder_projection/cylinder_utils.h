@@ -9,7 +9,14 @@
 #define CYLINDER_UTILS_H_
 
 
-#include "projector_calibration/calibration_utils.h"
+#include "rgbd_utils/calibration_utils.h"
+
+
+
+// TODO: also implement median
+Cloud computeMean(const std::vector<Cloud>& clouds);
+
+void applyBilateralFilter(const Cloud& in, double diameter, double sigmaDist, double sigmaPixel, Cloud& out);
 
 
 // assumes cylinder parallel to y-axis

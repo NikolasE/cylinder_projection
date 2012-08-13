@@ -8,8 +8,11 @@
 #ifndef CYLINDER_PROCESSSING_H_
 #define CYLINDER_PROCESSSING_H_
 
-#include "projector_calibration/calibration_utils.h"
+#include "rgbd_utils/type_definitions.h"
+#include "rgbd_utils/calibration_utils.h"
 #include "projector_calibration/projector_calibrator.h"
+
+
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -79,8 +82,8 @@ class Cylinder_Processing {
 
  ros::Publisher pub_input, pub_input_colored, pub_sampled, pub_inlier, pub_cylinder_marker, pub_inlier_moved;
 
+
  bool publishCylinderMarker(const pcl::ModelCoefficients::Ptr& coeffs);
- bool sendCloud(ros::Publisher& pub, Cloud& cloud);
 
  bool kinect_trafo_valid;
  Eigen::Affine3f kinect_trafo;
@@ -97,6 +100,10 @@ class Cylinder_Processing {
 
 
 public:
+
+ bool sendCloud(ros::Publisher& pub, Cloud& cloud);
+ ros::Publisher pub_mean_cloud;
+
  void init(ros::NodeHandle& nh);
 
  cv::Mat proj_matrix;

@@ -123,7 +123,6 @@ public Q_SLOTS:
     void load_calibration();
     void update_projector_image();
 
-
 private:
 	Ui::MainWindowDesign ui;
 	QNode qnode;

@@ -74,6 +74,22 @@ void QNode::imgCloudCB(const sensor_msgs::ImageConstPtr& img_ptr, const sensor_m
 
 
  pcl::fromROSMsg(*cloud_ptr, current_cloud);
+/*
+ cloud_list.push_back(current_cloud);
+
+ if (cloud_list.size() == list_length){
+  mean_cloud = computeMean(cloud_list);
+
+
+
+  cylinder_processor.sendCloud(cylinder_processor.pub_mean_cloud,mean_cloud);
+
+  cloud_list.clear();
+
+ }
+
+*/
+
 
  cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img_ptr , sensor_msgs::image_encodings::BGR8);
  current_kinect_image = cv_ptr->image;

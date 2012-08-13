@@ -64,8 +64,6 @@ file(GLOB_RECURSE QT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLINK
 # Binaries
 ##############################################################################
 
-include_directories(/usr/gast/engelhan/ros/master_thesis/projector_calibration/include)
-LINK_DIRECTORIES(/usr/gast/engelhan/ros/master_thesis/projector_calibration/lib)
 
 rosbuild_add_executable(cylinder_projection ${QT_SOURCES} ${QT_RESOURCES_CPP} ${QT_FORMS_HPP} ${QT_MOC_HPP})
-target_link_libraries(cylinder_projection ${QT_LIBRARIES} projector)
+target_link_libraries(cylinder_projection ${QT_LIBRARIES} projector_calibration rgbd_utils)

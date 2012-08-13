@@ -130,6 +130,7 @@ namespace cylinder_projection {
  }
 
 
+
  void MainWindow::select_area(){
 
   if (!mouse_handler.area_marked()) return;
@@ -147,7 +148,23 @@ namespace cylinder_projection {
 
   std::stringstream msg;
   Cylindric_projection_area area;
+
+/*
+  Cloud smoothed;
+
+  applyBilateralFilter(qnode.current_cloud,5, 0.05, 5,smoothed);
+
+  Cloud masked;
+  applyMaskOnCloud( mask,smoothed, masked);
+  qnode.cylinder_processor.sendCloud(qnode.cylinder_processor.pub_mean_cloud,masked);
+
+*/
+
   bool success = qnode.cylinder_processor.setNewInputCloud(qnode.current_cloud,msg,area, &mask);
+
+
+//  ROS_INFO("mean cloud:");
+//  qnode.cylinder_processor.setNewInputCloud(qnode.mean_cloud,msg,area, &mask);
 
   qnode.cylinder_processor.proj_image.setTo(0);
 
